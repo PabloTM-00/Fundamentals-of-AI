@@ -5,23 +5,17 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import train_test_split, KFold
 from sklearn.metrics import accuracy_score, recall_score, precision_score, f1_score, roc_auc_score, confusion_matrix
 
-# 1. Carga de datos
 df = pd.read_csv('decision_tree_dataset.csv')
 X = df.drop('target', axis=1) # Variables predictoras
 y = df['target'] # Variable a predecir
 
-# Función auxiliar para TNR (Especificidad)
 def calcular_tnr(y_true, y_pred):
     tn, fp, fn, tp = confusion_matrix(y_true, y_pred, labels=[0,1]).ravel()
     return tn / (tn + fp) if (tn + fp) > 0 else 0
 
-print("=== INICIANDO EXPERIMENTOS ===")
-
-# --- EXPERIMENTO 1: HOLD-OUT (10 Iteraciones) ---
-print("\n--- Método Hold-out (10% Test) ---")
+print("\n Hold-out (10% Test)")
 for i in range(10):
     start = time.time()
-    # OJO: No usamos random_state para que cada partición sea distinta
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.10)
     
     clf = DecisionTreeClassifier()
@@ -36,7 +30,6 @@ for i in range(10):
     tnr = calcular_tnr(y_test, y_pred)
     f1 = f1_score(y_test, y_pred, zero_division=0)
     
-    # Manejo de error si el test set (12 filas) aleatoriamente solo tiene 1 clase
     try:
         auc = roc_auc_score(y_test, y_prob)
     except ValueError:
@@ -45,14 +38,11 @@ for i in range(10):
     t = time.time() - start
     print(f"Exp {i+1} | Tiempo: {t:.4f}s | Acc: {acc:.2f} | F1: {f1:.2f} | AUC: {auc:.2f}")
 
-# --- EXPERIMENTO 2: 10-FOLD CROSS-VALIDATION (10 Iteraciones) ---
-print("\n--- Método 10-Fold Cross-Validation ---")
+print("\n 10-Fold Cross-Validation ")
 for i in range(10):
     start = time.time()
-    # shuffle=True garantiza particiones distintas y aleatorias por experimento
     kf = KFold(n_splits=10, shuffle=True)
     
-    # Listas temporales para guardar las métricas de los 10 folds
     acc_folds, f1_folds, auc_folds = [], [], []
     
     for train_index, test_index in kf.split(X):
@@ -72,5 +62,4 @@ for i in range(10):
             pass
             
     t = time.time() - start
-    # Mostramos la media de los 10 folds para este experimento
     print(f"Exp {i+1} | Tiempo: {t:.4f}s | Media Acc: {np.mean(acc_folds):.2f} | Media F1: {np.mean(f1_folds):.2f} | Media AUC: {np.mean(auc_folds):.2f}")
